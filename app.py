@@ -3,15 +3,23 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 
+
+
 from dotenv import load_dotenv
+
+
 
 
 #Cargar las variables de entorno
 load_dotenv()
 
 
+
+
 #crear instancia
 app =  Flask(__name__)
+
+
 
 
 # Configuración de la base de datos PostgreSQL
@@ -19,7 +27,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
+
+
 db = SQLAlchemy(app)
+
+
 
 
 # Modelo Categoría
@@ -27,6 +39,8 @@ class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+
+
 
 
 # Modelo Post
@@ -39,12 +53,16 @@ class Post(db.Model):
     category = db.relationship('Category', backref=db.backref('posts', lazy=True))
 
 
+
+
 # Ruta para ver todos los posts
 @app.route('/')
 def index():
     posts = Post.query.all()
     categories = Category.query.all()
     return render_template('index.html', posts=posts, categories=categories)
+
+
 
 
 #Ruta /post crear un nuevo post
@@ -59,11 +77,40 @@ def add_post():
         db.session.commit()
 
 
+
+
         return redirect(url_for('index'))
    
     #Aqui sigue si es GET
     categories = Category.query.all()
     return render_template('create_post.html', categories=categories)
+
+
+#Actualizar post
+@app.route('/post/update/<int:id>', methods=['GET','POST'])
+def update_post(id):
+    post = Post.query.get(id)
+    if request.method == 'POST':
+        post.title = request.form['title']
+        post.category_id = request.form['category_id']
+        post.content = request.form['content']
+        db.session.commit()
+        return redirect(url_for('index'))
+   
+    categories = Category.query.all()
+    return render_template('update_post.html', post=post, categories=categories)
+
+
+#Eliminar post
+@app.route('/posts/delete/<int:id>')
+def delete_post(id):
+    post = Post.query.get(id)
+    if post:
+        db.session.delete(post)
+        db.session.commit()
+    return redirect(url_for('index'))
+
+
 
 
 if __name__ == '__main__':
